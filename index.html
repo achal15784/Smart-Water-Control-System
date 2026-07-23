@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="theme-color" content="#DBEAFE" />
+<title>Water Control Terminal</title>
+<meta name="description" content="Smart water valve control & monitoring system — real-time flow analytics, remote valve control, and usage history." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* =====================================================
+   DESIGN TOKENS — 60% White · 30% Light Blue · 10% Accent
+   ===================================================== */
+:root {
+  /* White 60% */
+  --white: #FFFFFF;
+  --off-white: #F8FBFF;
+  --card-white: #FFFFFF;
+
+  /* Light Blue 30% */
+  --bg-app: #EBF4FF;
+  --bg-light: #DBEAFE;
+  --blue-100: #BFDBFE;
+  --blue-200: #93C5FD;
+  --blue-300: #60A5FA;
+  --header-bg: #EBF5FF;
+  --chip-bg: #DBEAFE;
+  --chip-text: #1E40AF;
+
+  /* Accent Blue 10% */
+  --accent: #2563EB;
+  --accent-dark: #1D4ED8;
+  --accent-light: #3B82F6;
+
+  /* Status */
+  --success: #16A34A;
+  --success-bg: #DCFCE7;
+  --danger: #DC2626;
+  --danger-bg: #FEE2E2;
+  --warning: #D97706;
+
+  /* Text */
+  --text-primary: #1E3A5F;
+  --text-secondary: #4B6A8A;
+  --text-muted: #94A3B8;
+  --text-dark: #0F2740;
+
+  /* Card */
+  --card-shadow: 0 2px 12px rgba(37,99,235,0.08), 0 1px 4px rgba(37,99,235,0.04);
+  --card-shadow-hover: 0 8px 24px rgba(37,99,235,0.14);
+  --card-radius: 16px;
+  --card-border: 1px solid rgba(147,197,253,0.4);
+
+  /* Nav */
+  --nav-height: 72px;
+  --header-height: 64px;
+}
+
+/* =====================================================
+   RESET & BASE
+   ===================================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =====================================================
+   PHONE SHELL — centering on desktop
+   ===================================================== */
+#app-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #C7DFF7 0%, #E0EEFF 50%, #D5EAFF 100%);
+}
+
+#phone {
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  max-height: 932px;
+  background: var(--bg-app);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.25);
+}
+
+@media (max-width: 480px) {
+  #phone { box-shadow: none; max-height: 100%; }
+}
+
+/* =====================================================
+   SCREENS
+   ===================================================== */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background: var(--bg-app);
+  animation: fadeIn 0.25s ease;
+}
+.screen.active { display: flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================================================
+   STATUS BAR (fake)
+   ===================================================== */
+.status-bar {
+  height: 28px;
+  background: var(--header-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(147,197,253,0.25);
+}
+.status-bar .sb-time { font-weight: 700; }
+.status-bar .sb-icons { display: flex; gap: 6px; align-items: center; }
+.status-bar .sb-icons i { font-size: 10px; }
+
+/* =====================================================
+   TOP HEADER
+   ===================================================== */
+.app-header {
+  height: var(--header-height);
+  background: var(--header-bg);
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(147,197,253,0.3);
+  position: relative;
+}
+.app-header .menu-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--blue-100);
+  background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-primary);
+  transition: all 0.2s;
+}
+.app-header .menu-btn:hover { background: var(--blue-100); }
+.app-header .header-title { flex: 1; }
+.app-header .header-title h1 {
+  font-size: 17px; font-weight: 700; color: var(--text-dark); line-height: 1.2;
+}
+.app-header .header-title .subtitle {
+  font-size: 11px; font-weight: 500; color: var(--success);
+  display: flex; align-items: center; gap: 4px; margin-top: 1px;
+}
+.app-header .header-title .subtitle .dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--success);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+.app-header .notif-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--blue-100);
+  background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-primary);
+  font-size: 15px; position: relative; transition: all 0.2s;
+}
+.app-header .notif-btn:hover { background: var(--blue-100); }
+.notif-badge {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger); border: 1.5px solid var(--white);
+}
+
+/* =====================================================
+   SCROLLABLE CONTENT AREA
+   ===================================================== */
+.screen-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 14px 0;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.screen-body::-webkit-scrollbar { width: 3px; }
+.screen-body::-webkit-scrollbar-track { background: transparent; }
+.screen-body::-webkit-scrollbar-thumb { background: var(--blue-200); border-radius: 2px; }
+
+/* =====================================================
+   BOTTOM NAVIGATION
+   ===================================================== */
+.bottom-nav {
+  height: var(--nav-height);
+  background: var(--white);
+  border-top: 1px solid var(--blue-100);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  box-shadow: 0 -4px 20px rgba(37,99,235,0.08);
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px 0 12px;
+  position: relative;
+  transition: all 0.2s;
+}
+.nav-item i { font-size: 20px; color: var(--text-muted); transition: all 0.25s; }
+.nav-item span { font-size: 10.5px; font-weight: 500; color: var(--text-muted); transition: all 0.25s; }
+.nav-item.active i { color: var(--accent); }
+.nav-item.active span { color: var(--accent); font-weight: 600; }
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 28px; height: 3px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+.nav-item:active { transform: scale(0.95); }
+
+/* =====================================================
+   CARDS
+   ===================================================== */
+.card {
+  background: var(--card-white);
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s;
+}
+.card:hover { box-shadow: var(--card-shadow-hover); }
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title i { color: var(--accent); font-size: 16px; }
+
+/* =====================================================
+   ==================== LOGIN SCREEN ==================
+   ===================================================== */
+#screen-login {
+  background: linear-gradient(160deg, #EBF4FF 0%, #DBEAFE 40%, #F0F7FF 100%);
+  justify-content: center;
+  align-items: center;
+  padding: 24px 20px;
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.login-logo .logo-icon {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--blue-300) 100%);
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 8px 30px rgba(37,99,235,0.3);
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.login-logo .logo-icon i { font-size: 36px; color: white; }
+.login-logo h2 { font-size: 22px; font-weight: 800; color: var(--text-dark); }
+.login-logo p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+.login-card {
+  background: var(--white);
+  border-radius: 24px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 8px 40px rgba(37,99,235,0.12);
+  border: 1px solid rgba(147,197,253,0.3);
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--bg-light);
+  border-radius: 12px;
+  padding: 3px;
+  margin-bottom: 24px;
+}
+.auth-tab {
+  flex: 1;
+  text-align: center;
+  padding: 9px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.auth-tab.active {
+  background: var(--white);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.12);
+}
+
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-control {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--blue-100);
+  background: var(--off-white);
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-dark);
+  outline: none;
+  transition: all 0.2s;
+}
+.form-control:focus {
+  border-color: var(--accent);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+.form-control::placeholder { color: var(--text-muted); }
+
+.input-group { position: relative; }
+.input-group .form-control { padding-right: 44px; }
+.input-group .eye-btn {
+  position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  cursor: pointer; color: var(--text-muted);
+  font-size: 14px; padding: 4px;
+  transition: color 0.2s;
+}
+.input-group .eye-btn:hover { color: var(--accent); }
+
+.forgot-link {
+  text-align: right; margin-top: -8px; margin-bottom: 20px;
+}
+.forgot-link a {
+  font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 500;
+}
+.forgot-link a:hover { text-decoration: underline; }
+
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+  letter-spacing: 0.3px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+.btn-primary:active { transform: translateY(0); }
+
+.login-hint {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-light);
+  border-radius: 10px;
+  padding: 10px;
+}
+.login-hint strong { color: var(--accent); }
+
+.error-msg {
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--danger);
+  margin-bottom: 14px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+.error-msg.show { display: flex; }
+
+.toast-msg {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  background: #1E3A5F; color: white;
+  padding: 12px 20px; border-radius: 12px;
+  font-size: 13px; font-weight: 500;
+  z-index: 9999; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.toast-msg.show { opacity: 1; }
+
+/* =====================================================
+   ================== DASHBOARD SCREEN ================
+   ===================================================== */
+
+/* 2-column metric row */
+.metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.metric-card {
+  background: var(--white);
+  border-radius: 14px;
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: 11px 12px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.metric-card:hover { box-shadow: var(--card-shadow-hover); }
+
+.metric-icon {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--bg-light), var(--blue-100));
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.metric-icon i { font-size: 15px; color: var(--accent); }
+.metric-body { flex: 1; min-width: 0; }
+.metric-label { font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-bottom: 1px; }
+.metric-value { font-size: 18px; font-weight: 800; color: var(--text-dark); letter-spacing: -0.5px; line-height: 1.1; }
+.metric-unit { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+
+/* Valve status card right column */
+.valve-card-inner { position: relative; }
+.valve-status-badge {
+  position: absolute; top: 0; right: 0;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.2);
+  animation: pulse-green 2s infinite;
+}
+@keyframes pulse-green {
+  0%,100% { box-shadow: 0 0 0 3px rgba(22,163,74,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(22,163,74,0.1); }
+}
+.valve-state-text {
+  font-size: 18px; font-weight: 800; letter-spacing: 0.5px; line-height: 1.1;
+}
+.valve-state-text.open { color: var(--success); }
+.valve-state-text.closed { color: var(--danger); }
+.valve-last-update { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+
+/* Ripple on metric-icon (valve card) */
+.ripple-icon {
+  position: relative;
+}
+.ripple-icon::after {
+  content: '';
+  position: absolute; inset: -4px;
+  border-radius: 12px;
+  border: 2px solid rgba(37,99,235,0.3);
+  animation: ripple-ring 2s infinite;
+}
+@keyframes ripple-ring {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* Volume progress card */
+.volume-card { padding: 16px; }
+.volume-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.volume-side { }
+.vol-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 3px; }
+.vol-value { font-size: 22px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+.vol-unit { font-size: 12px; color: var(--text-secondary); }
+.vol-edit-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 8px;
+  border: 1.5px solid var(--blue-200);
+  background: var(--white);
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  cursor: pointer; transition: all 0.2s;
+}
+.vol-edit-btn:hover { background: var(--bg-light); }
+
+.progress-track {
+  height: 10px;
+  background: var(--bg-light);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-light), var(--accent));
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute; top: 0; left: -100%; right: -100%; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  0% { left: -100%; } 100% { left: 100%; }
+}
+.progress-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text-muted);
+}
+.progress-pct {
+  text-align: center;
+  font-size: 12px; font-weight: 600;
+  color: var(--accent); margin-top: 4px;
+}
+
+/* Valve control */
+.valve-control-section {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.valve-control-label {
+  font-size: 13px; font-weight: 700; color: var(--text-dark);
+  margin-bottom: 10px; text-align: center;
+}
+.valve-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  cursor: pointer; font-size: 15px; font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+  transition: all 0.25s;
+}
+.valve-btn.close-valve {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: white;
+  box-shadow: 0 4px 18px rgba(37,99,235,0.35);
+}
+.valve-btn.open-valve {
+  background: linear-gradient(135deg, var(--success) 0%, #15803D 100%);
+  color: white;
+  box-shadow: 0 4px 18px rgba(22,163,74,0.35);
+}
+.valve-btn:hover { transform: translateY(-2px); }
+.valve-btn:active { transform: translateY(0) scale(0.98); }
+.valve-btn i { font-size: 20px; }
+.valve-btn-sub { font-size: 11px; font-weight: 400; opacity: 0.85; }
+
+/* Auto mode toggle card */
+.auto-mode-card {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.auto-mode-info { flex: 1; }
+.auto-mode-info h3 { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+.auto-mode-info p { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.auto-mode-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+}
+.auto-mode-state { font-size: 12px; font-weight: 700; color: var(--accent); }
+
+/* Toggle switch */
+.toggle-wrap { display: flex; align-items: center; gap: 6px; }
+.toggle {
+  width: 48px; height: 26px;
+  background: var(--blue-100);
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.25s;
+  border: none; outline: none;
+  flex-shrink: 0;
+}
+.toggle.on { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); }
+.toggle::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.toggle.on::after { transform: translateX(22px); }
+
+/* Live analytics chart */
+.chart-section {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.chart-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.chart-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700; color: var(--text-dark);
+}
+.chart-title i { color: var(--accent); }
+.chart-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--blue-100);
+  background: var(--white);
+  font-size: 12px; font-weight: 500; color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  cursor: pointer; outline: none;
+}
+.chart-wrap { height: 160px; position: relative; }
+.chart-legend {
+  text-align: center; font-size: 10px; color: var(--text-muted);
+  margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.legend-line {
+  width: 20px; height: 2px;
+  background: var(--accent); border-radius: 1px; display: inline-block;
+}
+
+/* =====================================================
+   ================ CONFIGURATION SCREEN ==============
+   ===================================================== */
+
+/* Device management */
+.device-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px;
+  background: var(--off-white);
+  border-radius: 12px;
+  border: 1px solid var(--blue-100);
+  margin-bottom: 10px;
+}
+.device-icon {
+  width: 40px; height: 40px;
+  background: var(--bg-light);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.device-icon i { font-size: 18px; color: var(--accent); }
+.device-info { flex: 1; }
+.device-name { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+.device-status {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; color: var(--success); margin-top: 2px;
+}
+.device-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+.device-menu-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 16px; padding: 4px;
+}
+
+.add-device-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--blue-200);
+  background: transparent;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  font-family: 'Inter', sans-serif;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+}
+.add-device-btn:hover { background: var(--bg-light); border-color: var(--accent); }
+
+/* Field assignment */
+.field-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bg-light);
+  gap: 12px;
+}
+.field-row:last-child { border-bottom: none; }
+.field-chip {
+  background: var(--chip-bg);
+  color: var(--chip-text);
+  font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 8px;
+  min-width: 54px; text-align: center;
+}
+.field-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-dark); }
+.field-chevron { color: var(--text-muted); font-size: 12px; }
+
+/* Device settings */
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bg-light);
+  gap: 10px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; min-width: 90px; }
+.setting-value { flex: 1; font-size: 12px; color: var(--text-dark); font-family: monospace; word-break: break-all; }
+.setting-value.masked { letter-spacing: 2px; color: var(--text-muted); }
+.setting-actions { display: flex; gap: 8px; }
+.icon-btn {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--blue-100);
+  background: var(--off-white);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--accent); font-size: 12px;
+  transition: all 0.2s;
+}
+.icon-btn:hover { background: var(--bg-light); border-color: var(--accent); }
+
+/* Calibration */
+.calib-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.calib-input {
+  width: 100px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--blue-200);
+  background: var(--off-white);
+  font-size: 14px; font-weight: 600; color: var(--text-dark);
+  font-family: 'Inter', sans-serif;
+  text-align: right; outline: none;
+}
+.calib-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+.auto-close-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.auto-close-label h4 { font-size: 13px; font-weight: 600; color: var(--text-dark); }
+.auto-close-label p { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+.save-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: white;
+  font-size: 15px; font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+  margin-bottom: 14px;
+}
+.save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+
+/* =====================================================
+   ================ HISTORY SCREEN ====================
+   ===================================================== */
+.period-tabs {
+  display: flex;
+  background: var(--white);
+  border-radius: 14px;
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: 4px;
+  margin-bottom: 12px;
+}
+.period-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  border-radius: 11px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.period-tab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: white;
+  box-shadow: 0 3px 10px rgba(37,99,235,0.3);
+}
+
+/* Usage summary cards 3-column */
+.usage-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.usage-card {
+  background: var(--white);
+  border-radius: 14px;
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: 12px 10px;
+  text-align: center;
+  transition: box-shadow 0.2s;
+}
+.usage-card:hover { box-shadow: var(--card-shadow-hover); }
+.usage-icon {
+  width: 36px; height: 36px;
+  background: var(--bg-light);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 7px;
+}
+.usage-icon i { font-size: 15px; color: var(--accent); }
+.usage-label { font-size: 9.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 3px; }
+.usage-value { font-size: 14px; font-weight: 800; color: var(--text-dark); letter-spacing: -0.3px; }
+.usage-unit { font-size: 9px; color: var(--text-secondary); }
+
+/* Volume trend chart */
+.trend-chart-wrap { height: 170px; position: relative; }
+
+/* Valve events */
+.events-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.see-all-btn {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  background: none; border: none; cursor: pointer;
+  padding: 4px 8px; border-radius: 6px;
+  transition: background 0.2s;
+}
+.see-all-btn:hover { background: var(--bg-light); }
+.event-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bg-light);
+}
+.event-item:last-child { border-bottom: none; }
+.event-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.event-icon.open { background: rgba(22,163,74,0.12); }
+.event-icon.open i { color: var(--success); font-size: 16px; }
+.event-icon.closed { background: rgba(220,38,38,0.1); }
+.event-icon.closed i { color: var(--danger); font-size: 16px; }
+.event-text { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-dark); }
+.event-time { text-align: right; }
+.event-time .time { font-size: 12px; font-weight: 600; color: var(--text-dark); }
+.event-time .day { font-size: 10px; color: var(--text-muted); }
+
+/* Additional stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+.stat-item { text-align: center; }
+.stat-icon {
+  width: 32px; height: 32px;
+  background: var(--bg-light);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 5px;
+}
+.stat-icon i { font-size: 14px; color: var(--accent); }
+.stat-label { font-size: 8.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 3px; line-height: 1.2; }
+.stat-value { font-size: 13px; font-weight: 800; color: var(--text-dark); letter-spacing: -0.3px; }
+.stat-unit { font-size: 8.5px; color: var(--text-secondary); }
+
+.export-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: white; font-size: 15px; font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+  margin-bottom: 14px;
+}
+.export-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+
+/* =====================================================
+   EDIT TARGET MODAL
+   ===================================================== */
+.modal-overlay {
+  position: absolute; inset: 0;
+  background: rgba(15,39,64,0.5);
+  backdrop-filter: blur(4px);
+  display: none; align-items: flex-end; justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s;
+}
+.modal-overlay.show { display: flex; }
+.modal-sheet {
+  background: var(--white);
+  border-radius: 24px 24px 0 0;
+  width: 100%; padding: 24px;
+  animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.modal-handle {
+  width: 36px; height: 4px; background: var(--blue-200);
+  border-radius: 2px; margin: 0 auto 20px;
+}
+.modal-title { font-size: 17px; font-weight: 700; color: var(--text-dark); margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.btn-cancel {
+  flex: 1; padding: 13px; border-radius: 12px;
+  border: 1.5px solid var(--blue-200); background: var(--white);
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s;
+}
+.btn-cancel:hover { background: var(--bg-light); }
+.btn-confirm {
+  flex: 1; padding: 13px; border-radius: 12px;
+  border: none; background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  font-size: 14px; font-weight: 700; color: white;
+  font-family: 'Inter', sans-serif; cursor: pointer;
+  box-shadow: 0 3px 12px rgba(37,99,235,0.3); transition: all 0.2s;
+}
+.btn-confirm:hover { transform: translateY(-1px); }
+
+/* Loader */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Micro divider */
+.divider { height: 1px; background: var(--bg-light); margin: 4px 0 12px; }
+
+/* Section spacing */
+.section-mb { margin-bottom: 14px; }
+
+</style>
+</head>
+<body>
+
+<div id="app-root">
+<div id="phone">
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div class="screen active" id="screen-login">
+    <div id="login-panel">
+      <div class="login-logo">
+        <div class="logo-icon"><i class="fas fa-water"></i></div>
+        <h2>Water Control</h2>
+        <p>Smart Valve Management System</p>
+      </div>
+
+      <div class="login-card">
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+          <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
+        </div>
+
+        <!-- Login form -->
+        <div id="login-form">
+          <div class="error-msg" id="login-error"><i class="fas fa-circle-exclamation"></i><span id="login-error-text"></span></div>
+          <div class="form-group">
+            <label for="login-email">Email Address</label>
+            <input class="form-control" id="login-email" type="email" placeholder="admin@waterctrl.com" autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-group">
+              <input class="form-control" id="login-password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+              <button class="eye-btn" onclick="togglePwd('login-password', this)"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="forgot-link"><a href="#" onclick="showForgot(); return false;">Forgot password?</a></div>
+          <button class="btn-primary" id="login-btn" onclick="doLogin()">
+            <span id="login-btn-text">Sign In</span>
+            <div class="spinner" id="login-spinner"></div>
+            <i class="fas fa-arrow-right" id="login-arrow"></i>
+          </button>
+          <div class="login-hint" style="margin-top:16px;">
+            <i class="fas fa-key" style="color:var(--accent);margin-right:6px;"></i>
+            Demo: <strong>admin@waterctrl.com</strong> / <strong>Water@2026</strong>
+          </div>
+        </div>
+
+        <!-- Sign up form -->
+        <div id="signup-form" style="display:none;">
+          <div class="error-msg" id="signup-error"><i class="fas fa-circle-exclamation"></i><span id="signup-error-text"></span></div>
+          <div class="form-group">
+            <label for="su-name">Full Name</label>
+            <input class="form-control" id="su-name" type="text" placeholder="John Doe" />
+          </div>
+          <div class="form-group">
+            <label for="su-email">Email Address</label>
+            <input class="form-control" id="su-email" type="email" placeholder="you@example.com" />
+          </div>
+          <div class="form-group">
+            <label for="su-pwd">Password</label>
+            <div class="input-group">
+              <input class="form-control" id="su-pwd" type="password" placeholder="Min 8 characters" />
+              <button class="eye-btn" onclick="togglePwd('su-pwd', this)"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="su-pwd2">Confirm Password</label>
+            <div class="input-group">
+              <input class="form-control" id="su-pwd2" type="password" placeholder="Repeat password" />
+              <button class="eye-btn" onclick="togglePwd('su-pwd2', this)"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <button class="btn-primary" id="signup-btn" onclick="doSignup()">
+            <span>Create Account</span>
+            <div class="spinner" id="signup-spinner"></div>
+            <i class="fas fa-user-plus"></i>
+          </button>
+        </div>
+
+        <!-- Forgot password -->
+        <div id="forgot-form" style="display:none;">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Enter your email and we'll send a reset link.</p>
+          <div class="form-group">
+            <label for="forgot-email">Email Address</label>
+            <input class="form-control" id="forgot-email" type="email" placeholder="admin@waterctrl.com" />
+          </div>
+          <button class="btn-primary" onclick="doForgot()">
+            <i class="fas fa-paper-plane"></i> Send Reset Link
+          </button>
+          <div style="text-align:center;margin-top:14px;">
+            <a href="#" style="font-size:13px;color:var(--accent);font-weight:500;" onclick="showLogin(); return false;">← Back to Sign In</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP (after login) ==================== -->
+  <div class="screen" id="screen-app" style="display:none;">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="sb-time" id="sb-clock">9:41</span>
+      <div class="sb-icons">
+        <i class="fas fa-signal"></i>
+        <i class="fas fa-wifi"></i>
+        <i class="fas fa-battery-full"></i>
+      </div>
+    </div>
+
+    <!-- Screens container -->
+    <div id="screens-wrap" style="flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;">
+
+      <!-- ======= DASHBOARD ======= -->
+      <div class="screen active" id="dash-screen">
+        <!-- Header -->
+        <div class="app-header">
+          <button class="menu-btn" onclick="showToast('Menu coming soon')"><i class="fas fa-bars"></i></button>
+          <div class="header-title">
+            <h1>Water Control System</h1>
+            <div class="subtitle"><span class="dot"></span> System Online</div>
+          </div>
+          <button class="notif-btn" onclick="showToast('No new notifications')">
+            <i class="fas fa-bell"></i><span class="notif-badge"></span>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="screen-body">
+
+          <!-- Flow Rate + Valve Status -->
+          <div class="metrics-row">
+            <div class="metric-card">
+              <div class="metric-icon"><i class="fas fa-chart-line"></i></div>
+              <div class="metric-body">
+                <div class="metric-label">Flow Rate</div>
+                <div class="metric-value"><span id="d-flow">2.45</span> <span class="metric-unit">L/min</span></div>
+              </div>
+            </div>
+            <div class="metric-card" style="position:relative;">
+              <div class="metric-icon ripple-icon"><i class="fas fa-faucet-drip"></i></div>
+              <div class="metric-body">
+                <div class="metric-label">Valve Status <i class="fas fa-rss" style="color:var(--accent);font-size:9px;margin-left:3px;"></i></div>
+                <div class="valve-state-text open" id="d-valve-text">OPEN</div>
+                <div class="valve-last-update" id="d-last-update">Last Updated: 09:41:23 AM</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Volume Progress -->
+          <div class="card volume-card">
+            <div class="volume-row">
+              <div class="volume-side">
+                <div class="vol-label">Volume Delivered</div>
+                <div class="vol-value"><span id="d-volume">15.20</span> <span class="vol-unit">L</span></div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:flex-start;gap:10px;">
+                  <div>
+                    <div class="vol-label">Target Volume</div>
+                    <div class="vol-value" style="color:var(--text-dark);"><span id="d-target">20.00</span> <span class="vol-unit">L</span></div>
+                  </div>
+                  <button class="vol-edit-btn" id="edit-target-btn" onclick="openEditTarget()"><i class="fas fa-pen-to-square"></i> Edit</button>
+                </div>
+              </div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="d-progress" style="width:76%;"></div>
+            </div>
+            <div class="progress-labels"><span id="d-p-left">0 L</span><span id="d-p-right">20.00 L</span></div>
+            <div class="progress-pct"><span id="d-pct">76%</span> Completed</div>
+          </div>
+
+          <!-- Valve Control -->
+          <div class="valve-control-section">
+            <div class="valve-control-label">Valve Control</div>
+            <button class="valve-btn close-valve" id="valve-ctrl-btn" onclick="toggleValve()">
+              <i class="fas fa-faucet-drip" id="valve-ctrl-icon"></i>
+              <div>
+                <div id="valve-ctrl-text">CLOSE VALVE</div>
+                <div class="valve-btn-sub" id="valve-ctrl-sub">Tap to close the valve</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Auto Mode -->
+          <div class="auto-mode-card">
+            <div class="metric-icon" style="flex-shrink:0;"><i class="fas fa-gears"></i></div>
+            <div class="auto-mode-info">
+              <h3>Auto Mode</h3>
+              <p>Automatically control valve based on target volume</p>
+            </div>
+            <div class="auto-mode-right">
+              <div class="auto-mode-state" id="auto-state-label">ON</div>
+              <button class="toggle on" id="auto-toggle-dash" onclick="toggleAuto('dash')"></button>
+            </div>
+          </div>
+
+          <!-- Live Analytics -->
+          <div class="chart-section">
+            <div class="chart-header">
+              <div class="chart-title"><i class="fas fa-chart-bar"></i> Live Analytics</div>
+              <select class="chart-select" onchange="changeChartType(this.value)">
+                <option value="flowRate">Flow Rate Graph</option>
+                <option value="volume">Volume Graph</option>
+              </select>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="live-chart"></canvas>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-line"></span>
+              <span id="chart-legend-text">Flow Rate (L/min)</span>
+            </div>
+          </div>
+
+        </div><!-- /screen-body -->
+      </div><!-- /dash-screen -->
+
+      <!-- ======= CONFIGURATION ======= -->
+      <div class="screen" id="config-screen" style="display:none;">
+        <div class="app-header">
+          <button class="menu-btn" onclick="showToast('Menu coming soon')"><i class="fas fa-bars"></i></button>
+          <div class="header-title"><h1 style="font-size:19px;">Configuration</h1></div>
+          <button class="notif-btn" onclick="showToast('No new notifications')"><i class="fas fa-bell"></i></button>
+        </div>
+        <div class="screen-body">
+
+          <!-- Device Management -->
+          <div class="card">
+            <div class="card-title"><i class="fas fa-server"></i> Device Management</div>
+            <div class="device-item">
+              <div class="device-icon"><i class="fas fa-microchip"></i></div>
+              <div class="device-info">
+                <div class="device-name">WTR-CTRL-01</div>
+                <div class="device-status"><span class="dot"></span> Online</div>
+              </div>
+              <button class="device-menu-btn"><i class="fas fa-ellipsis-vertical"></i></button>
+            </div>
+            <button class="add-device-btn" onclick="showToast('Device pairing coming in next update')">
+              <i class="fas fa-plus"></i> Add Device
+            </button>
+          </div>
+
+          <!-- Field Assignment -->
+          <div class="card">
+            <div class="card-title"><i class="fas fa-list-check"></i> Field Assignment</div>
+            <div class="field-row">
+              <div class="field-chip">Field 2</div>
+              <div class="field-name">Flow Rate</div>
+              <i class="fas fa-chevron-down field-chevron"></i>
+            </div>
+            <div class="field-row">
+              <div class="field-chip">Field 3</div>
+              <div class="field-name">Target Limit</div>
+              <i class="fas fa-chevron-down field-chevron"></i>
+            </div>
+            <div class="field-row">
+              <div class="field-chip">Field 4</div>
+              <div class="field-name">Total Volume</div>
+              <i class="fas fa-chevron-down field-chevron"></i>
+            </div>
+            <div class="field-row">
+              <div class="field-chip">Field 5</div>
+              <div class="field-name">Valve State</div>
+              <i class="fas fa-chevron-down field-chevron"></i>
+            </div>
+            <div class="field-row">
+              <div class="field-chip">Field 6</div>
+              <div class="field-name">Command Code</div>
+              <i class="fas fa-chevron-down field-chevron"></i>
+            </div>
+          </div>
+
+          <!-- Device Settings -->
+          <div class="card">
+            <div class="card-title"><i class="fas fa-sliders"></i> Device Settings</div>
+            <div class="setting-row">
+              <div class="setting-label">Channel ID</div>
+              <div class="setting-value" id="s-channel">3403978</div>
+              <div class="setting-actions">
+                <button class="icon-btn" onclick="copyVal('3403978')"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label">Write API Key</div>
+              <div class="setting-value masked" id="s-write-key">••••••••••••••••</div>
+              <div class="setting-actions">
+                <button class="icon-btn" onclick="revealKey('s-write-key','Y81W3425ERRWF97J',this)"><i class="fas fa-eye"></i></button>
+                <button class="icon-btn" onclick="copyVal('Y81W3425ERRWF97J')"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label">Read API Key</div>
+              <div class="setting-value masked" id="s-read-key">••••••••••••••••</div>
+              <div class="setting-actions">
+                <button class="icon-btn" onclick="revealKey('s-read-key','1R81FXF7Z1G80Y2E',this)"><i class="fas fa-eye"></i></button>
+                <button class="icon-btn" onclick="copyVal('1R81FXF7Z1G80Y2E')"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label">Username</div>
+              <div class="setting-value" id="s-username" style="font-size:11px;">Kh4wFSMYBBcAOwkglgISBSs</div>
+              <div class="setting-actions">
+                <button class="icon-btn" onclick="copyVal('Kh4wFSMYBBcAOwkglgISBSs')"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label">Client ID</div>
+              <div class="setting-value" id="s-clientid" style="font-size:11px;">Kh4wFSMYBBcAOwkglgISBSs</div>
+              <div class="setting-actions">
+                <button class="icon-btn" onclick="copyVal('Kh4wFSMYBBcAOwkglgISBSs')"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label">Password</div>
+              <div class="setting-value masked" id="s-mqtt-pwd">••••••••••••••••••</div>
+              <div class="setting-actions">
+                <button class="icon-btn" onclick="revealKey('s-mqtt-pwd','NyE4P7R/0fjcPOlkJv5Ukq1g',this)"><i class="fas fa-eye"></i></button>
+                <button class="icon-btn" onclick="copyVal('NyE4P7R/0fjcPOlkJv5Ukq1g')"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Control Settings -->
+          <div class="card">
+            <div class="card-title"><i class="fas fa-sliders-h"></i> Control Settings</div>
+            <div class="calib-row">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-dark);">Calibration Constant</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Pulses per litre factor</div>
+              </div>
+              <input class="calib-input" id="calib-input" type="number" value="420.791" step="0.001" />
+            </div>
+            <div class="divider"></div>
+            <div class="auto-close-row">
+              <div class="auto-close-label">
+                <h4>Auto Close Enable</h4>
+                <p>Auto-stop valve when target reached</p>
+              </div>
+              <button class="toggle on" id="auto-toggle-config" onclick="toggleAuto('config')"></button>
+            </div>
+          </div>
+
+          <button class="save-btn" onclick="doSaveSettings()">
+            <i class="fas fa-floppy-disk"></i> Save Settings
+          </button>
+
+        </div>
+      </div><!-- /config-screen -->
+
+      <!-- ======= HISTORY & ANALYTICS ======= -->
+      <div class="screen" id="history-screen" style="display:none;">
+        <div class="app-header">
+          <button class="menu-btn" onclick="showToast('Menu coming soon')"><i class="fas fa-bars"></i></button>
+          <div class="header-title"><h1 style="font-size:19px;">History &amp; Analytics</h1></div>
+          <button class="notif-btn" onclick="showToast('No new notifications')"><i class="fas fa-bell"></i></button>
+        </div>
+        <div class="screen-body">
+
+          <!-- Period tabs -->
+          <div class="period-tabs">
+            <div class="period-tab active" id="tab-day"   onclick="setPeriod('day')">Day</div>
+            <div class="period-tab"        id="tab-week"  onclick="setPeriod('week')">Week</div>
+            <div class="period-tab"        id="tab-month" onclick="setPeriod('month')">Month</div>
+          </div>
+
+          <!-- Usage summary -->
+          <div class="usage-row">
+            <div class="usage-card">
+              <div class="usage-icon"><i class="fas fa-droplet"></i></div>
+              <div class="usage-label">Today's Usage</div>
+              <div class="usage-value" id="h-today">25.40</div>
+              <div class="usage-unit">L</div>
+            </div>
+            <div class="usage-card">
+              <div class="usage-icon"><i class="fas fa-calendar-week"></i></div>
+              <div class="usage-label">Weekly Usage</div>
+              <div class="usage-value" id="h-week">160.80</div>
+              <div class="usage-unit">L</div>
+            </div>
+            <div class="usage-card">
+              <div class="usage-icon"><i class="fas fa-chart-bar"></i></div>
+              <div class="usage-label">Monthly Usage</div>
+              <div class="usage-value" id="h-month">602.30</div>
+              <div class="usage-unit">L</div>
+            </div>
+          </div>
+
+          <!-- Volume Trend chart -->
+          <div class="card" style="padding:14px;">
+            <div class="chart-header">
+              <div class="chart-title"><i class="fas fa-chart-column"></i> Volume Trend (L)</div>
+              <select class="chart-select" style="font-size:11px;">
+                <option>Bar Chart</option>
+                <option>Line Chart</option>
+              </select>
+            </div>
+            <div class="trend-chart-wrap">
+              <canvas id="trend-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Valve Events -->
+          <div class="card">
+            <div class="events-header">
+              <div class="card-title" style="margin-bottom:0;"><i class="fas fa-clock-rotate-left"></i> Valve Events</div>
+              <button class="see-all-btn">See All</button>
+            </div>
+            <div id="events-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Additional Statistics -->
+          <div class="card">
+            <div class="card-title"><i class="fas fa-square-poll-vertical"></i> Additional Statistics</div>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-icon"><i class="fas fa-water"></i></div>
+                <div class="stat-label">Avg Flow Rate</div>
+                <div class="stat-value" id="s-flow">2.15</div>
+                <div class="stat-unit">L/min</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon"><i class="fas fa-droplet"></i></div>
+                <div class="stat-label">Total Volume</div>
+                <div class="stat-value" id="s-vol">25.40</div>
+                <div class="stat-unit">L</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-label">Total Run Time</div>
+                <div class="stat-value" id="s-time">2h 35m</div>
+                <div class="stat-unit"></div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon"><i class="fas fa-rotate"></i></div>
+                <div class="stat-label">Total Cycles</div>
+                <div class="stat-value" id="s-cycles">8</div>
+                <div class="stat-unit"></div>
+              </div>
+            </div>
+          </div>
+
+          <button class="export-btn" onclick="doExport()">
+            <i class="fas fa-file-arrow-down"></i> Export Data
+          </button>
+
+        </div>
+      </div><!-- /history-screen -->
+
+    </div><!-- /screens-wrap -->
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+      <div class="nav-item active" id="nav-dash" onclick="switchTab('dash')">
+        <i class="fas fa-house"></i><span>Dashboard</span>
+      </div>
+      <div class="nav-item" id="nav-config" onclick="switchTab('config')">
+        <i class="fas fa-gear"></i><span>Configuration</span>
+      </div>
+      <div class="nav-item" id="nav-history" onclick="switchTab('history')">
+        <i class="fas fa-chart-bar"></i><span>History</span>
+      </div>
+    </div>
+  </div><!-- /screen-app -->
+
+</div><!-- /phone -->
+</div><!-- /app-root -->
+
+<!-- Edit Target Modal -->
+<div class="modal-overlay" id="edit-target-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit Target Volume</div>
+    <div class="form-group">
+      <label for="target-input">Target Volume (Litres)</label>
+      <input class="form-control" id="target-input" type="number" step="0.5" min="0" max="1000" value="20.00" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditTarget()">Cancel</button>
+      <button class="btn-confirm" onclick="saveTarget()">Set Target</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-msg" id="toast"></div>
+
+<script>
+// =====================================================
+// DEMO CREDENTIALS
+// =====================================================
+const DEMO_EMAIL    = 'admin@waterctrl.com';
+const DEMO_PASSWORD = 'Water@2026';
+const DEMO_ACCOUNTS = [
+  { email: DEMO_EMAIL, password: DEMO_PASSWORD, name: 'Admin User' }
+];
+
+// =====================================================
+// APP STATE
+// =====================================================
+const state = {
+  valveOpen: true,
+  autoMode: true,
+  flowRate: 2.45,
+  totalVolume: 15.20,
+  targetVolume: 20.00,
+  currentTab: 'dash',
+  currentPeriod: 'day',
+  liveChartType: 'flowRate',
+  liveFlowHistory: [],
+  liveVolumeHistory: [],
+  liveLabels: [],
+};
+
+// Pre-fill live chart history
+for (let i = 30; i >= 0; i--) {
+  const t = new Date(Date.now() - i * 30000);
+  state.liveFlowHistory.push(+(1.5 + Math.random() * 2).toFixed(2));
+  state.liveVolumeHistory.push(+(Math.random() * 25 + 10).toFixed(2));
+  state.liveLabels.push(formatTime(t));
+}
+
+// =====================================================
+// AUTH
+// =====================================================
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const errTx = document.getElementById('login-error-text');
+
+  errEl.classList.remove('show');
+
+  if (!email || !pwd) {
+    errTx.textContent = 'Please fill in all fields.';
+    errEl.classList.add('show'); return;
+  }
+
+  // Simulate loading
+  setLoginLoading(true);
+  setTimeout(() => {
+    setLoginLoading(false);
+    const acc = DEMO_ACCOUNTS.find(a => a.email === email && a.password === pwd);
+    if (acc) {
+      localStorage.setItem('wcs_session', JSON.stringify({ email, name: acc.name }));
+      launchApp();
+    } else {
+      errTx.textContent = 'Invalid email or password. Try admin@waterctrl.com / Water@2026';
+      errEl.classList.add('show');
+    }
+  }, 1100);
+}
+
+function doSignup() {
+  const name = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pwd   = document.getElementById('su-pwd').value;
+  const pwd2  = document.getElementById('su-pwd2').value;
+  const errEl = document.getElementById('signup-error');
+  const errTx = document.getElementById('signup-error-text');
+
+  errEl.classList.remove('show');
+  if (!name || !email || !pwd || !pwd2) { errTx.textContent='Please fill in all fields.'; errEl.classList.add('show'); return; }
+  if (pwd !== pwd2) { errTx.textContent='Passwords do not match.'; errEl.classList.add('show'); return; }
+  if (pwd.length < 6) { errTx.textContent='Password must be at least 6 characters.'; errEl.classList.add('show'); return; }
+
+  document.getElementById('signup-spinner').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('signup-spinner').style.display = 'none';
+    DEMO_ACCOUNTS.push({ email, password: pwd, name });
+    localStorage.setItem('wcs_session', JSON.stringify({ email, name }));
+    showToast('Account created! Welcome, ' + name.split(' ')[0] + '!');
+    setTimeout(launchApp, 800);
+  }, 1200);
+}
+
+function doForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) { showToast('Please enter your email'); return; }
+  showToast('Reset link sent to ' + email);
+  setTimeout(showLogin, 1500);
+}
+
+function setLoginLoading(on) {
+  document.getElementById('login-spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('login-arrow').style.display   = on ? 'none'  : 'inline';
+  document.getElementById('login-btn-text').textContent  = on ? 'Signing in...' : 'Sign In';
+  document.getElementById('login-btn').disabled = on;
+}
+
+function launchApp() {
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-app').style.display = 'flex';
+  document.getElementById('screen-app').classList.add('active');
+  initCharts();
+  startLiveUpdates();
+  updateClock();
+}
+
+function checkSession() {
+  const s = localStorage.getItem('wcs_session');
+  if (s) { setTimeout(launchApp, 300); }
+}
+
+function doLogout() {
+  localStorage.removeItem('wcs_session');
+  location.reload();
+}
+
+// =====================================================
+// AUTH TAB SWITCHING
+// =====================================================
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('login-form').style.display  = tab === 'login'  ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('forgot-form').style.display = 'none';
+}
+function showForgot() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('signup-form').style.display = 'none';
+  document.getElementById('forgot-form').style.display = 'block';
+}
+function showLogin() {
+  document.getElementById('login-form').style.display  = 'block';
+  document.getElementById('forgot-form').style.display = 'none';
+  document.getElementById('tab-login').classList.add('active');
+  document.getElementById('tab-signup').classList.remove('active');
+}
+
+function togglePwd(id, btn) {
+  const inp = document.getElementById(id);
+  const showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  btn.querySelector('i').className = showing ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+
+// =====================================================
+// TAB NAVIGATION
+// =====================================================
+function switchTab(tab) {
+  state.currentTab = tab;
+  ['dash','config','history'].forEach(t => {
+    document.getElementById(t+'-screen').style.display   = t === tab ? 'flex'  : 'none';
+    document.getElementById(t+'-screen').className       = t === tab ? 'screen active' : 'screen';
+    document.getElementById('nav-'+t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'history') updateHistoryStats();
+}
+
+// =====================================================
+// VALVE CONTROL
+// =====================================================
+function toggleValve() {
+  state.valveOpen = !state.valveOpen;
+  updateValveUI();
+  showToast(state.valveOpen ? '✓ Valve Opening… command sent' : '✓ Valve Closing… command sent');
+}
+
+function updateValveUI() {
+  const open = state.valveOpen;
+  // Valve status card
+  const vtxt = document.getElementById('d-valve-text');
+  vtxt.textContent = open ? 'OPEN' : 'CLOSED';
+  vtxt.className = 'valve-state-text ' + (open ? 'open' : 'closed');
+  // Timestamp
+  document.getElementById('d-last-update').textContent = 'Last Updated: ' + formatTimeNow();
+  // Control button
+  const btn = document.getElementById('valve-ctrl-btn');
+  const icon = document.getElementById('valve-ctrl-icon');
+  const text = document.getElementById('valve-ctrl-text');
+  const sub  = document.getElementById('valve-ctrl-sub');
+  if (open) {
+    btn.className = 'valve-btn close-valve';
+    text.textContent = 'CLOSE VALVE';
+    sub.textContent  = 'Tap to close the valve';
+  } else {
+    btn.className = 'valve-btn open-valve';
+    text.textContent = 'OPEN VALVE';
+    sub.textContent  = 'Tap to open the valve';
+  }
+}
+
+// =====================================================
+// AUTO MODE TOGGLE
+// =====================================================
+function toggleAuto(src) {
+  state.autoMode = !state.autoMode;
+  ['dash','config'].forEach(id => {
+    const el = document.getElementById('auto-toggle-' + id);
+    if (el) el.classList.toggle('on', state.autoMode);
+  });
+  document.getElementById('auto-state-label').textContent = state.autoMode ? 'ON' : 'OFF';
+  showToast('Auto Mode ' + (state.autoMode ? 'Enabled' : 'Disabled'));
+}
+
+// =====================================================
+// TARGET VOLUME EDIT
+// =====================================================
+function openEditTarget() {
+  document.getElementById('target-input').value = state.targetVolume;
+  document.getElementById('edit-target-modal').classList.add('show');
+}
+function closeEditTarget() {
+  document.getElementById('edit-target-modal').classList.remove('show');
+}
+function saveTarget() {
+  const val = parseFloat(document.getElementById('target-input').value);
+  if (isNaN(val) || val <= 0) { showToast('Enter a valid volume'); return; }
+  state.targetVolume = val;
+  updateVolumeUI();
+  closeEditTarget();
+  showToast('Target set to ' + val.toFixed(2) + ' L');
+}
+function updateVolumeUI() {
+  document.getElementById('d-target').textContent = state.targetVolume.toFixed(2);
+  document.getElementById('d-p-right').textContent = state.targetVolume.toFixed(2) + ' L';
+  const pct = Math.min(100, (state.totalVolume / state.targetVolume) * 100);
+  document.getElementById('d-progress').style.width = pct.toFixed(1) + '%';
+  document.getElementById('d-pct').textContent = Math.round(pct) + '%';
+}
+
+// =====================================================
+// LIVE DATA SIMULATION
+// =====================================================
+function startLiveUpdates() {
+  setInterval(() => {
+    // Fluctuate flow rate
+    state.flowRate = Math.max(0.5, +(state.flowRate + (Math.random() - 0.5) * 0.3).toFixed(2));
+    if (state.valveOpen) {
+      state.totalVolume = +(state.totalVolume + state.flowRate / 120).toFixed(3);
+      if (state.autoMode && state.totalVolume >= state.targetVolume) {
+        state.totalVolume = state.targetVolume;
+        state.valveOpen = false;
+        updateValveUI();
+        showToast('✓ Auto-closed: Target reached!');
+      }
+    }
+    // Update UI
+    document.getElementById('d-flow').textContent = state.flowRate.toFixed(2);
+    document.getElementById('d-volume').textContent = state.totalVolume.toFixed(2);
+    updateVolumeUI();
+    // Append to history
+    const t = formatTimeNow();
+    state.liveFlowHistory.push(state.flowRate);
+    state.liveVolumeHistory.push(+state.totalVolume.toFixed(2));
+    state.liveLabels.push(t);
+    if (state.liveFlowHistory.length > 30) {
+      state.liveFlowHistory.shift();
+      state.liveVolumeHistory.shift();
+      state.liveLabels.shift();
+    }
+    updateLiveChart();
+  }, 2000);
+}
+
+// =====================================================
+// CHARTS
+// =====================================================
+let liveChart, trendChart;
+
+function initCharts() {
+  // Live analytics chart
+  const lctx = document.getElementById('live-chart').getContext('2d');
+  liveChart = new Chart(lctx, {
+    type: 'line',
+    data: {
+      labels: state.liveLabels.slice(-20),
+      datasets: [{
+        label: 'Flow Rate (L/min)',
+        data: state.liveFlowHistory.slice(-20),
+        borderColor: '#2563EB',
+        backgroundColor: 'rgba(37,99,235,0.08)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#2563EB',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1E3A5F', titleColor: '#93C5FD', bodyColor: '#fff',
+          borderColor: 'rgba(37,99,235,0.4)', borderWidth: 1,
+          callbacks: { label: ctx => ' ' + ctx.parsed.y.toFixed(2) + ' L/min' }
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(147,197,253,0.15)'}, ticks:{color:'#94A3B8',font:{size:9},maxTicksLimit:6,maxRotation:0} },
+        y: { grid:{color:'rgba(147,197,253,0.15)'}, ticks:{color:'#94A3B8',font:{size:9}}, beginAtZero:true, title:{display:true,text:'L/min',color:'#94A3B8',font:{size:9}} }
+      },
+      animation: { duration: 400 }
+    }
+  });
+
+  // Trend chart (history)
+  const tctx = document.getElementById('trend-chart').getContext('2d');
+  const trendData = [22,32,35,40,33,26,21];
+  trendChart = new Chart(tctx, {
+    type: 'bar',
+    data: {
+      labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      datasets: [{
+        label: 'Volume (L)',
+        data: trendData,
+        backgroundColor: trendData.map((v,i) => i === 3 ? '#2563EB' : 'rgba(37,99,235,0.5)'),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor:'#1E3A5F', bodyColor:'#fff',
+          callbacks: { label: ctx => ' ' + ctx.parsed.y + ' L' }
+        }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{color:'#94A3B8',font:{size:10}} },
+        y: { grid:{color:'rgba(147,197,253,0.2)'}, ticks:{color:'#94A3B8',font:{size:10}}, beginAtZero:true }
+      },
+      animation: { duration: 600 }
+    }
+  });
+
+  // Build valve events
+  buildValveEvents();
+}
+
+function updateLiveChart() {
+  if (!liveChart) return;
+  const isFlow = state.liveChartType === 'flowRate';
+  const data   = isFlow ? state.liveFlowHistory : state.liveVolumeHistory;
+  liveChart.data.labels   = [...state.liveLabels];
+  liveChart.data.datasets[0].data = [...data];
+  liveChart.data.datasets[0].label = isFlow ? 'Flow Rate (L/min)' : 'Volume (L)';
+  liveChart.options.scales.y.title.text = isFlow ? 'L/min' : 'L';
+  liveChart.update('none');
+}
+
+function changeChartType(val) {
+  state.liveChartType = val;
+  document.getElementById('chart-legend-text').textContent = val === 'flowRate' ? 'Flow Rate (L/min)' : 'Volume (L)';
+  updateLiveChart();
+}
+
+// =====================================================
+// HISTORY
+// =====================================================
+const PERIODS = {
+  day:   { today:'25.40', week:'160.80', month:'602.30', flow:'2.15', vol:'25.40', time:'2h 35m', cycles:'8', barData:[22,32,35,40,33,26,21], barLabels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] },
+  week:  { today:'160.80', week:'618.00', month:'2480.00', flow:'1.92', vol:'160.80', time:'14h 12m', cycles:'42', barData:[145,172,158,190,162,135,148], barLabels:['W1','W2','W3','W4','W5','W6','W7'] },
+  month: { today:'602.30', week:'2480.00', month:'7322.60', flow:'2.05', vol:'602.30', time:'49h 8m', cycles:'156', barData:[580,612,598,641,577,603,622], barLabels:['Jan','Feb','Mar','Apr','May','Jun','Jul'] },
+};
+
+function setPeriod(p) {
+  state.currentPeriod = p;
+  ['day','week','month'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === p);
+  });
+  updateHistoryStats();
+}
+
+function updateHistoryStats() {
+  const d = PERIODS[state.currentPeriod];
+  document.getElementById('h-today').textContent  = d.today;
+  document.getElementById('h-week').textContent   = d.week;
+  document.getElementById('h-month').textContent  = d.month;
+  document.getElementById('s-flow').textContent   = d.flow;
+  document.getElementById('s-vol').textContent    = d.vol;
+  document.getElementById('s-time').textContent   = d.time;
+  document.getElementById('s-cycles').textContent = d.cycles;
+  if (trendChart) {
+    trendChart.data.labels = d.barLabels;
+    trendChart.data.datasets[0].data = d.barData;
+    trendChart.data.datasets[0].backgroundColor = d.barData.map((v,i) =>
+      v === Math.max(...d.barData) ? '#2563EB' : 'rgba(37,99,235,0.5)'
+    );
+    trendChart.update();
+  }
+}
+
+// =====================================================
+// VALVE EVENTS
+// =====================================================
+const EVENTS = [
+  { type:'open',   time:'10:15 AM', day:'Today' },
+  { type:'closed', time:'10:28 AM', day:'Today' },
+  { type:'open',   time:'11:02 AM', day:'Today' },
+  { type:'closed', time:'11:15 AM', day:'Today' },
+  { type:'open',   time:'11:32 AM', day:'Today' },
+];
+
+function buildValveEvents() {
+  const el = document.getElementById('events-list');
+  el.innerHTML = EVENTS.map(e => `
+    <div class="event-item">
+      <div class="event-icon ${e.type}">
+        <i class="fas ${e.type === 'open' ? 'fa-lock-open' : 'fa-lock'}"></i>
+      </div>
+      <div class="event-text">Valve ${e.type === 'open' ? 'Opened' : 'Closed'}</div>
+      <div class="event-time">
+        <div class="time">${e.time}</div>
+        <div class="day">${e.day}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// =====================================================
+// CONFIGURATION ACTIONS
+// =====================================================
+const MASKED = '••••••••••••••••';
+const revealed = {};
+
+function revealKey(elemId, value, btn) {
+  const el = document.getElementById(elemId);
+  if (!revealed[elemId]) {
+    revealed[elemId] = true;
+    el.textContent = value;
+    el.classList.remove('masked');
+    btn.querySelector('i').className = 'fas fa-eye-slash';
+  } else {
+    revealed[elemId] = false;
+    el.textContent = MASKED;
+    el.classList.add('masked');
+    btn.querySelector('i').className = 'fas fa-eye';
+  }
+}
+
+function copyVal(val) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(val).then(() => showToast('Copied to clipboard!'));
+  } else {
+    const t = document.createElement('textarea');
+    t.value = val; document.body.appendChild(t);
+    t.select(); document.execCommand('copy');
+    document.body.removeChild(t);
+    showToast('Copied!');
+  }
+}
+
+function doSaveSettings() {
+  const calib = document.getElementById('calib-input').value;
+  showToast('✓ Settings saved — Calibration: ' + calib);
+}
+
+// =====================================================
+// EXPORT
+// =====================================================
+function doExport() {
+  const d = PERIODS[state.currentPeriod];
+  const rows = [
+    ['Period','Total Volume (L)','Avg Flow (L/min)','Run Time','Cycles'],
+    [state.currentPeriod, d.vol, d.flow, d.time, d.cycles],
+    [],
+    ['Day','Volume (L)'],
+    ...d.barLabels.map((l,i) => [l, d.barData[i]]),
+    [],
+    ['Valve Events'],
+    ['Time','Day','Event'],
+    ...EVENTS.map(e => [e.time, e.day, e.type === 'open' ? 'Valve Opened' : 'Valve Closed'])
+  ];
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'water_control_' + state.currentPeriod + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('✓ Data exported as CSV');
+}
+
+// =====================================================
+// UTILITIES
+// =====================================================
+function showToast(msg, duration=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function formatTime(d) {
+  return d.getHours().toString().padStart(2,'0') + ':' +
+         d.getMinutes().toString().padStart(2,'0') + ':' +
+         d.getSeconds().toString().padStart(2,'0');
+}
+function formatTimeNow() { return formatTime(new Date()); }
+
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours() % 12 || 12;
+  const m = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('sb-clock').textContent = h + ':' + m;
+  setTimeout(updateClock, 15000);
+}
+
+// =====================================================
+// ENTER KEY SUPPORT
+// =====================================================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const loginVisible = document.getElementById('login-form').style.display !== 'none'
+      && document.getElementById('screen-login').style.display !== 'none'
+      && !document.getElementById('screen-app').classList.contains('active');
+    if (loginVisible) doLogin();
+  }
+});
+
+// =====================================================
+// INIT
+// =====================================================
+checkSession();
+</script>
+</body>
+</html>
