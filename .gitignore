@@ -1,0 +1,30 @@
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.idea/
+**/.vscode/
+**/*.iml
+**/coverage/
+
+# Arduino / Embedded
+**/*.hex
+**/*.elf
+**/*.bin
+**/*.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Firebase / secrets
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+**/secrets/
+
+# Logs
+*.log
