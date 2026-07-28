@@ -45,3 +45,6 @@ Powered by an **ESP32 microcontroller** and a **SIM800L GSM/GPRS module**, the t
                            │
                            ▼
              [ Web Dashboard (work.html) ]
+
+
+we have made an website first then we shifted towards app making integrate an fully functional integrated with proper structured workflow firebase , multiple pages and everything
