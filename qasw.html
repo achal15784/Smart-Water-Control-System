@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Control Terminal (Premium Executive Theme)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-slate: #0f172a;
+      --panel-bg: rgba(255, 255, 255, 0.88);
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+      --text-muted: #475569;
+      --border-light: #e2e8f0;
+      --cyan-accent: #0284c7;
+      --success: #10b981;
+      --danger: #f43f5e;
+      --neutral-grey: #64748b;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background-color: var(--bg-slate);
+      background-image: 
+        radial-gradient(at 0% 0%, hsla(200,95%,30%,0.4) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(215,95%,25%,0.5) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, hsla(260,90%,30%,0.3) 0px, transparent 70%),
+        linear-gradient(135deg, #0b1329 0%, #1e293b 100%);
+      background-attachment: fixed;
+      color: var(--text-dark);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    .top-header {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      color: #ffffff;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+    }
+
+    .top-header h1 {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: linear-gradient(to right, #38bdf8, #bae6fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-badge {
+      font-family: 'Montserrat', sans-serif;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .dashboard-workspace {
+      max-width: 1300px;
+      width: 100%;
+      margin: 40px auto;
+      padding: 0 25px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      box-sizing: border-box;
+    }
+
+    .main-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      
+      /* Crucial fix to make click targeting work correctly across columns */
+      position: relative;
+      z-index: 10;
+    }
+
+    .panel-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #0369a1;
+      border-bottom: 2px solid rgba(2, 132, 199, 0.15);
+      padding-bottom: 12px;
+      margin-bottom: 4px;
+    }
+
+    .telemetry-stack {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .metric-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      padding: 22px;
+      text-align: left;
+      box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .metric-box p {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .metric-box .value {
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: var(--text-dark);
+      margin-top: 8px;
+      display: block;
+      letter-spacing: -0.5px;
+    }
+
+    .unit {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--neutral-grey);
+      margin-left: 4px;
+    }
+
+    .right-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .valve-monitor-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 14px 10px;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .pill-open { background: #dcfce7; color: var(--success); border: 1px solid #a7f3d0; }
+    .pill-closed { background: #fee2e2; color: var(--danger); border: 1px solid #fecdd3; }
+
+    .switch-label-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 20px;
+      margin-bottom: 24px;
+    }
+
+    .control-deck {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #fafafa;
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 35px 20px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.04);
+    }
+
+    .btn-circle {
+      font-family: 'Montserrat', sans-serif;
+      width: 115px;
+      height: 115px;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.5px;
+      transition: all 0.25s ease;
+      position: relative;
+      text-align: center;
+      border: none;
+    }
+    
+    .btn-open {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 8px 16px -2px rgba(16, 185, 129, 0.4), inset 0 -5px 0 rgba(0,0,0,0.25);
+    }
+    .btn-open:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 24px -2px rgba(16, 185, 129, 0.55);
+    }
+
+    .btn-close {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      color: white;
+      box-shadow: 0 8px 16px -2px rgba(244, 63, 94, 0.4), inset 0 -5px 0 rgba(0,0,0,0.25);
+    }
+    .btn-close:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 24px -2px rgba(244, 63, 94, 0.55);
+    }
+
+    .btn-reset {
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      color: white;
+      box-shadow: 0 8px 16px -2px rgba(100, 116, 139, 0.4), inset 0 -5px 0 rgba(0,0,0,0.25);
+    }
+    .btn-reset:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 24px -2px rgba(100, 116, 139, 0.55);
+    }
+    
+    .btn-circle:active {
+      transform: translateY(2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .target-input-wrapper {
+      background: var(--card-bg);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+    }
+
+    input[type='number'] {
+      flex: 1;
+      background: #f8fafc;
+      border: 1px solid var(--border-light);
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      outline: none;
+      margin-right: 24px;
+    }
+
+    input[type='number']:focus {
+      border-color: var(--cyan-accent);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+    }
+
+    .btn-set {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      border: none;
+      padding: 15px 32px;
+      border-radius: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
+    }
+    .btn-set:hover { 
+      background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body onload="startDashboard()">
+
+  <div class="top-header">
+    <h1>Water Control Terminal</h1>
+    <div class="header-badge">SIM800L MQTT Active</div>
+  </div>
+
+  <div class="dashboard-workspace">
+    
+    <div class="main-panel">
+      <div class="panel-title">Flow Analytics Loop</div>
+      
+      <div class="telemetry-stack">
+        <div class="top-metrics-row">
+          <div class="metric-box">
+            <p>Flow Rate</p>
+            <span class="value" id="flow">0.00<span class="unit">L/min</span></span>
+          </div>
+
+          <div class="metric-box">
+            <p>Target Bound</p>
+            <span class="value" id="targetDisplay">0.0<span class="unit">L</span></span>
+          </div>
+        </div>
+
+        <div class="metric-box">
+          <p>Total Volume</p>
+          <span class="value" id="volume">0.000<span class="unit">L</span></span>
+        </div>
+
+        <div class="target-input-wrapper">
+          <div class="input-label" style="font-family:'Montserrat', sans-serif;">Set Target Limit Boundary</div>
+          <div class="input-row">
+            <input type="number" id="t" value="20.0" step="0.1" min="0">
+            <button class="btn-set" onclick="executeTargetSubmit()">Set Bound</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-panel">
+      <div class="panel-title">Hardware Command Interface</div>
+      
+      <div class="right-mini-grid">
+        <div class="metric-box">
+          <p>Pulse Caught</p>
+          <span class="value" id="pulses" style="font-size: 1.6rem; font-weight: 700; margin-top:6px;">0</span>
+        </div>
+        <div class="metric-box">
+          <p>Auto Stopped</p>
+          <span class="value" id="auto" style="font-size: 1.6rem; font-weight: 700; margin-top:6px;">NO</span>
+        </div>
+        <div class="metric-box valve-monitor-box">
+          <p style="margin-bottom: 8px;">Current Valve</p>
+          <span id="state" class="status-pill pill-closed">CLOSED</span>
+        </div>
+      </div>
+
+      <div class="switch-label-heading">Execution Switches</div>
+      <div class="control-deck">
+        <button class="btn-circle btn-open" onclick="executeNumericUplink(1)">Open<br>Valve</button>
+        <button class="btn-circle btn-close" onclick="executeNumericUplink(0)">Close<br>Valve</button>
+        <button class="btn-circle btn-reset" onclick="executeNumericUplink(2)">Reset<br>System</button>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  const channelID = "3403978"; 
+  const readAPIKey = "1R81FXF7Z1G80Y2E";
+  const writeAPIKey = "Y81W3425ERRWF97J";
+
+  function readCloudTelemetry() {
+    fetch(`https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=1`)
+      .then(r => r.json())
+      .then(data => {
+        const feed = data.feeds[0];
+        if(!feed) return;
+        
+        let fl = parseFloat(feed.field2 || 0);
+        let tg = parseFloat(feed.field3 || 0);
+        let vl = parseFloat(feed.field4 || 0);
+        let st = parseInt(feed.field5 || 0);
+
+        document.getElementById('flow').innerHTML = fl.toFixed(2) + '<span class="unit">L/min</span>'; 
+        document.getElementById('volume').innerHTML = vl.toFixed(3) + '<span class="unit">L</span>';
+        document.getElementById('targetDisplay').innerHTML = tg.toFixed(1) + '<span class="unit">L</span>'; 
+        document.getElementById('pulses').innerHTML = Math.round(vl * 422.791);
+        
+        // Dynamic detection of automated cutout condition
+        let autoBadge = document.getElementById('auto');
+        if (st === 0 && vl >= tg && tg > 0) {
+          autoBadge.innerHTML = "YES";
+          autoBadge.style.color = "var(--danger)";
+        } else {
+          autoBadge.innerHTML = "NO";
+          autoBadge.style.color = "var(--text-dark)";
+        }
+
+        let badge = document.getElementById('state');
+        if(st === 1) { 
+          badge.innerHTML = "OPEN"; 
+          badge.className = "status-pill pill-open";
+        } else { 
+          badge.innerHTML = "CLOSED"; 
+          badge.className = "status-pill pill-closed";
+        }
+      }).catch(e => console.log("Connecting..."));
+  }
+
+  // FIXED INTERACTION ENGINE: Updates target boundary configurations alongside command codes
+  function executeNumericUplink(numericCommandCode) {
+    let currentTarget = document.getElementById('t').value;
+    let url = `https://api.thingspeak.com/update?api_key=${writeAPIKey}&field3=${currentTarget}&field6=${numericCommandCode}`;
+
+    fetch(url)
+      .then(r => r.json())
+      .then(d => {
+        console.log(`MQTT Execution Command code ${numericCommandCode} successfully broadcast to channel.`);
+        setTimeout(readCloudTelemetry, 1500); 
+      })
+      .catch(e => console.log("Uplink error:", e));
+  }
+
+  function executeTargetSubmit() {
+    let targetVal = document.getElementById('t').value;
+    let url = `https://api.thingspeak.com/update?api_key=${writeAPIKey}&field3=${targetVal}`;
+    fetch(url)
+      .then(r => r.json())
+      .then(d => {
+        console.log("Boundary threshold limit stored:", targetVal);
+        setTimeout(readCloudTelemetry, 1500);
+      })
+      .catch(e => console.log("Target update block error:", e));
+  }
+
+  function startDashboard() { 
+    readCloudTelemetry(); 
+    setInterval(readCloudTelemetry, 4000); 
+  }
+</script>
+</body>
+</html>
